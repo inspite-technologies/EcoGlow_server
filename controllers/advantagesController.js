@@ -11,16 +11,17 @@ const getFilePath = (files, fieldName) => {
 // --- CREATE OR UPDATE (UPSERT) ---
 export const saveAdvantagesPage = async (req, res) => {
   try {
-    // 1. Destructure text fields
     const {
       sectionTitle,
       ctaTitleLine1,
       ctaTitleLine2,
       ctaButtonText,
-      ctaWhatsappText
+      ctaButtonLink,
+      ctaWhatsappText,
+      ctaWhatsappLink
     } = req.body;
 
-    // 2. Parse items (JSON string)
+    // Parse items safely
     let items = [];
     if (req.body.items) {
       try {
@@ -30,7 +31,6 @@ export const saveAdvantagesPage = async (req, res) => {
       }
     }
 
-    // 3. Find existing document
     let pageData = await AdvantagesPage.findOne();
 
     if (!pageData) {
@@ -40,34 +40,39 @@ export const saveAdvantagesPage = async (req, res) => {
         ctaTitleLine1,
         ctaTitleLine2,
         ctaButtonText,
+        ctaButtonLink,
         ctaWhatsappText,
+        ctaWhatsappLink,
         ctaImage: getFilePath(req.files, "ctaImage"),
-        items: [] // We will map icons next
+        items: [] 
       });
     } else {
       // --- UPDATE EXISTING ---
-      if (sectionTitle) pageData.sectionTitle = sectionTitle;
-      if (ctaTitleLine1) pageData.ctaTitleLine1 = ctaTitleLine1;
-      if (ctaTitleLine2) pageData.ctaTitleLine2 = ctaTitleLine2;
-      if (ctaButtonText) pageData.ctaButtonText = ctaButtonText;
-      if (ctaWhatsappText) pageData.ctaWhatsappText = ctaWhatsappText;
+      // FIX: Use (!== undefined) to allow saving empty strings ""
+      
+      if (sectionTitle !== undefined) pageData.sectionTitle = sectionTitle;
+      if (ctaTitleLine1 !== undefined) pageData.ctaTitleLine1 = ctaTitleLine1;
+      if (ctaTitleLine2 !== undefined) pageData.ctaTitleLine2 = ctaTitleLine2;
+      
+      // Update Buttons & Links
+      if (ctaButtonText !== undefined) pageData.ctaButtonText = ctaButtonText;
+      if (ctaButtonLink !== undefined) pageData.ctaButtonLink = ctaButtonLink; 
+      
+      // Update WhatsApp & Links
+      if (ctaWhatsappText !== undefined) pageData.ctaWhatsappText = ctaWhatsappText;
+      if (ctaWhatsappLink !== undefined) pageData.ctaWhatsappLink = ctaWhatsappLink; 
 
-      // Update CTA Image if new file uploaded
+      // Update CTA Image only if a new file is uploaded
       const newCtaImg = getFilePath(req.files, "ctaImage");
       if (newCtaImg) pageData.ctaImage = newCtaImg;
     }
 
-    // 4. Handle Item Icons (Map uploads to specific items)
-    // We expect files named like "itemIcon_0", "itemIcon_1" etc. based on index or ID
+    // Handle Item Icons
     const updatedItems = items.map((item, index) => {
-      // Check if a new file exists for this item index/id
-      // Assuming frontend sends keys like "itemIcon_0", "itemIcon_1"...
       const iconFile = getFilePath(req.files, `itemIcon_${index}`);
-      
       return {
         title: item.title,
         description: item.description,
-        // Use new icon if uploaded, else keep existing string, else null
         icon: iconFile || item.icon 
       };
     });
@@ -88,13 +93,11 @@ export const saveAdvantagesPage = async (req, res) => {
   }
 };
 
-// --- GET ---
+// ... (GET and DELETE functions remain the same) ...
 export const getAdvantagesPage = async (req, res) => {
   try {
     const data = await AdvantagesPage.findOne();
-    if (!data) {
-      return res.status(200).json({ success: true, data: null, message: "No data found" });
-    }
+    if (!data) return res.status(200).json({ success: true, data: null, message: "No data found" });
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -104,11 +107,9 @@ export const getAdvantagesPage = async (req, res) => {
 export const deleteAdvantagesPage = async (req, res) => {
   try {
     const data = await AdvantagesPage.findOneAndDelete();
-    if (!data) {
-      return res.status(404).json({ success: false, message: "No data found to delete" });
-    }
+    if (!data) return res.status(404).json({ success: false, message: "No data found to delete" });
     res.status(200).json({ success: true, message: "Advantages page deleted successfully" });
-    } catch (error) {
+  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
-    }
+  }
 };

@@ -14,10 +14,13 @@ export const saveServicesPage = async (req, res) => {
     const {
       mainTitle,
       mainDescription,
+      mainLink,      // 🔥 Added
       card1Title,
       card1Subtitle,
+      card1Link,     // 🔥 Added
       card2Title,
       card2Subtitle,
+      card2Link,     // 🔥 Added
     } = req.body;
 
     let servicePlans = [];
@@ -28,14 +31,17 @@ export const saveServicesPage = async (req, res) => {
     const updateData = {
       mainTitle,
       mainDescription,
+      mainLink,      // 🔥 Added
       card1Title,
       card1Subtitle,
+      card1Link,     // 🔥 Added
       card2Title,
       card2Subtitle,
+      card2Link,     // 🔥 Added
       servicePlans,
     };
 
-    // ✅ Add images ONLY if uploaded
+    // ✅ Image Handling
     if (req.files?.card1Image) {
       updateData.card1Image = req.files.card1Image[0].path;
     }
@@ -45,7 +51,7 @@ export const saveServicesPage = async (req, res) => {
     }
 
     const servicesPage = await ServicesPage.findOneAndUpdate(
-      {}, // 🔥 no condition → single document
+      {}, 
       { $set: updateData },
       { new: true, upsert: true }
     );

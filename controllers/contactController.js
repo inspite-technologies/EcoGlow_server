@@ -13,19 +13,20 @@ export const getContactPage = async (req, res) => {
 // UPSERT: Create or Update without needing an ID
 export const updateContactPage = async (req, res) => {
   try {
-    const { 
-      heroTitle, 
-      heroSubtitle, 
-      formLabel, 
-      formMainTitle, 
-      mapEmbedUrl, 
-      address, 
-      phone, 
+    const {
+      heroTitle,
+      heroSubtitle,
+      formLabel,
+      formMainTitle,
+      mapEmbedUrl,
+      address,
+      phone,
       email,
+      contactEmail,
       // Destructure the new social fields from the request
       facebook,
       instagram,
-      youtube 
+      youtube
     } = req.body;
 
     const updateData = {
@@ -34,9 +35,10 @@ export const updateContactPage = async (req, res) => {
       formLabel,
       formMainTitle,
       mapEmbedUrl,
+      contactEmail,
       // Map basic contact info
       contactInfo: {
-        address, 
+        address,
         phone,
         email
       },
@@ -54,23 +56,23 @@ export const updateContactPage = async (req, res) => {
     }
 
     const updated = await ContactPage.findOneAndUpdate(
-      {}, 
-      updateData, 
+      {},
+      updateData,
       { upsert: true, new: true }
     );
 
-    res.status(200).json({ 
-      success: true, 
-      message: "Contact page updated successfully", 
-      data: updated 
+    res.status(200).json({
+      success: true,
+      message: "Contact page updated successfully",
+      data: updated
     });
 
   } catch (error) {
     console.error("Error updating contact page:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error while updating contact page", 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      message: "Server error while updating contact page",
+      error: error.message
     });
   }
 };

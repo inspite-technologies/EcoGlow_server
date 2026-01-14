@@ -1,6 +1,6 @@
 import express from "express";
 // Import your existing models (adjust paths as needed)
-import Hero from "../models/heroSchema.js"; 
+import Hero from "../models/heroSchema.js";
 import HomeAbout from "../models/homeAboutSchema.js";
 import HomeServices from "../models/servicesHomeSchema.js";
 import Banner from "../models/bannerSchema.js";
@@ -20,6 +20,18 @@ router.get("/", async (req, res) => {
       Advantages.find(),
       Message.findOne()
     ]);
+
+    // Debug logging
+    console.log("📊 Home Content Fetch:");
+    console.log("  - Hero:", hero ? "✅ Found" : "❌ Not found");
+    console.log("  - About:", about ? "✅ Found" : "❌ Not found");
+    console.log("  - Services:", services ? `✅ Found ${services.length} items` : "❌ Not found");
+    console.log("  - Banner:", banner ? "✅ Found" : "❌ Not found");
+    console.log("  - Advantages:", advantages ? `✅ Found ${advantages.length} items` : "❌ Not found");
+    console.log("  - Message:", message ? "✅ Found" : "❌ Not found");
+    if (message) {
+      console.log("  - Message Data:", JSON.stringify(message, null, 2));
+    }
 
     // Return one unified object
     res.status(200).json({

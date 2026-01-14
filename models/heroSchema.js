@@ -11,7 +11,8 @@ const HeroSlideSchema = new mongoose.Schema({
 // --- Main Schema ---
 const HeroSectionSchema = new mongoose.Schema({
   // The Hero section is essentially just a container for the list of slides
-  slides: [HeroSlideSchema]
+  slides: [HeroSlideSchema],
+  sectionLink: { type: String, default: "" }
 }, { timestamps: true });
 
 const HeroSection = mongoose.model("HeroSection", HeroSectionSchema);

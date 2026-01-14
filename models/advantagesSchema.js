@@ -22,8 +22,14 @@ const AdvantagesPageSchema = new Schema(
     ctaImage: { type: String, default: null },    
     ctaTitleLine1: { type: String },
     ctaTitleLine2: { type: String},
+    
+    // Updated Button Fields
     ctaButtonText: { type: String },
-    ctaWhatsappText: { type: String, }
+    ctaButtonLink: { type: String }, // <--- New Hyperlink Field
+    
+    // Updated WhatsApp Fields
+    ctaWhatsappText: { type: String },
+    ctaWhatsappLink: { type: String } // <--- New WhatsApp Link Field
   },
   { timestamps: true }
 );

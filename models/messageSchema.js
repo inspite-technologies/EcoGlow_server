@@ -8,11 +8,14 @@ const messageSchema = new mongoose.Schema(
     mdPhoto: { type: String, default: null },
     mdSignature: { type: String, default: null },
     
-    // New field added here
+    // Existing new field
     gratitudeText: { type: String, default: "" }, 
 
     connectTitle: { type: String },
     connectSubtitle: { type: String },
+    
+    // --- NEW FIELD FOR EMAIL ---
+    contactEmail: { type: String, default: "" } 
   },
   { timestamps: true }
 );

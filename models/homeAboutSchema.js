@@ -7,6 +7,7 @@ const HomeAboutSchema = new Schema(
     heroTitle: { type: String, default: "" },
     heroParagraphs: { type: [String], default: [] },
     valuesCommonImage: { type: String, default: null },
+    aboutLink: { type: String, default: "" },
 
     // Fixed distinct fields instead of an array
     vision: {

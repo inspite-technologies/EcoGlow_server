@@ -8,8 +8,8 @@ const contactPageSchema = new mongoose.Schema({
 
   // Form & Text Section
   formLabel: { type: String },
-  formMainTitle: { type: String},
-  
+  formMainTitle: { type: String },
+
   // Information Details
   contactInfo: {
     address: { type: String },
@@ -28,6 +28,9 @@ const contactPageSchema = new mongoose.Schema({
 
   // Map
   mapEmbedUrl: { type: String },
+
+  // Contact Email for Form Submissions
+  contactEmail: { type: String, default: "" }
 }, { timestamps: true });
 
 const ContactPage = mongoose.model("ContactPage", contactPageSchema);

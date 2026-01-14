@@ -4,8 +4,8 @@ const BookServiceSchema = new mongoose.Schema({
   // Hero Section
   heroSmallText: { type: String, default: "Book Your" },
   heroLargeText: { type: String, default: "Services" },
-  heroBannerImage: { type: String }, 
-  
+  heroBannerImage: { type: String },
+
   // Section Header
   topLabel: { type: String, default: "BOOK YOUR SERVICE" },
   sectionSmallLabel: { type: String, default: "Book Now" },
@@ -15,6 +15,9 @@ const BookServiceSchema = new mongoose.Schema({
   // Form Buttons
   submitButtonText: { type: String, default: "Submit" },
   resetButtonText: { type: String, default: "Reset" },
+
+  // Contact Email for Form Submissions
+  contactEmail: { type: String, default: "" }
 }, { timestamps: true });
 
 const BookService = mongoose.model("BookService", BookServiceSchema);
