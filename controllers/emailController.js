@@ -1,16 +1,21 @@
-import nodemailer from 'nodemailer';
-import Newsletter from '../models/newsletterSchema.js';
-import MessagePage from '../models/messageSchema.js'; // Added MessagePage model
-import ContactPage from '../models/contactSchema.js'; // Added ContactPage model
+import nodemailer from "nodemailer";
+import Newsletter from "../models/newsletterSchema.js";
+import MessagePage from "../models/messageSchema.js"; // Added MessagePage model
+import ContactPage from "../models/contactSchema.js"; // Added ContactPage model
 
 // --- CONFIGURATION ---
 // Ideally, put these in your .env file
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Or use 'host', 'port' for other providers
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // true only for 465
   auth: {
-    user: process.env.EMAIL_USER, // Your Gmail address
-    pass: process.env.EMAIL_PASS  // Your Gmail App Password (Not your login password)
-  }
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS, // APP PASSWORD
+  },
+  connectionTimeout: 60 * 1000, // 60 seconds
+  greetingTimeout: 30 * 1000,
+  socketTimeout: 60 * 1000,
 });
 
 export const sendNewsletterNotification = async (req, res) => {
@@ -19,29 +24,36 @@ export const sendNewsletterNotification = async (req, res) => {
     let { userEmail, adminEmail, name, phone, subject, message } = req.body;
 
     // 2. Fetch admin email from DB if not provided or to ensure it's from DB
-    if (!adminEmail || adminEmail === 'contact@ecoglow.ae') {
+    if (!adminEmail || adminEmail === "contact@ecoglow.ae") {
       try {
         const [messageSettings, contactSettings] = await Promise.all([
           MessagePage.findOne().lean(),
-          ContactPage.findOne().lean()
+          ContactPage.findOne().lean(),
         ]);
 
-        adminEmail = messageSettings?.contactEmail || contactSettings?.contactEmail || 'contact@ecoglow.ae';
+        adminEmail =
+          messageSettings?.contactEmail ||
+          contactSettings?.contactEmail ||
+          "contact@ecoglow.ae";
         console.log("📍 Backend resolved admin email from DB:", adminEmail);
       } catch (dbError) {
         console.warn("⚠️ DB Fetching settings failed:", dbError.message);
-        adminEmail = 'contact@ecoglow.ae'; // Fallback
+        adminEmail = "contact@ecoglow.ae"; // Fallback
       }
     }
 
     if (!userEmail || !adminEmail) {
-      return res.status(400).json({ success: false, message: "Missing email details" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing email details" });
     }
 
     // 3. Email Format Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(userEmail)) {
-      return res.status(400).json({ success: false, message: "Invalid email format" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid email format" });
     }
 
     // Determine if this is a newsletter subscription or contact form with newsletter
@@ -55,7 +67,9 @@ export const sendNewsletterNotification = async (req, res) => {
       mailOptions = {
         from: process.env.EMAIL_USER,
         to: adminEmail,
-        subject: `📩 New Contact & Newsletter Subscription${subject ? `: ${subject}` : ''}`,
+        subject: `📩 New Contact & Newsletter Subscription${
+          subject ? `: ${subject}` : ""
+        }`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <div style="background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); padding: 30px; border-radius: 12px 12px 0 0;">
@@ -67,41 +81,57 @@ export const sendNewsletterNotification = async (req, res) => {
               <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h3 style="color: #0f766e; margin-top: 0; border-bottom: 2px solid #14b8a6; padding-bottom: 10px;">Contact Details</h3>
                 
-                ${name ? `
+                ${
+                  name
+                    ? `
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">👤 Name:</strong><br/>
                   <span style="font-size: 1.1em; color: #1e293b;">${name}</span>
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
                 
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">📧 Email:</strong><br/>
                   <a href="mailto:${userEmail}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${userEmail}</a>
                 </div>
                 
-                ${phone ? `
+                ${
+                  phone
+                    ? `
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">📞 Phone:</strong><br/>
                   <a href="tel:${phone}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${phone}</a>
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
                 
-                ${subject ? `
+                ${
+                  subject
+                    ? `
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">📌 Subject:</strong><br/>
                   <span style="font-size: 1.1em; color: #1e293b;">${subject}</span>
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
               
-              ${message ? `
+              ${
+                message
+                  ? `
               <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h3 style="color: #0f766e; margin-top: 0; border-bottom: 2px solid #14b8a6; padding-bottom: 10px;">💬 Message</h3>
                 <div style="background: #f0fdfa; padding: 15px; border-radius: 6px; border-left: 4px solid #14b8a6; line-height: 1.6;">
-                  ${message.replace(/\n/g, '<br/>')}
+                  ${message.replace(/\n/g, "<br/>")}
                 </div>
               </div>
-              ` : ''}
+              `
+                  : ""
+              }
               
               <div style="background: #dcfce7; padding: 15px; border-radius: 8px; border-left: 4px solid #16a34a; margin-bottom: 20px;">
                 <p style="margin: 0; font-size: 0.9em; color: #166534;">
@@ -111,28 +141,35 @@ export const sendNewsletterNotification = async (req, res) => {
               
               <div style="padding: 15px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
                 <p style="margin: 0; font-size: 0.9em; color: #92400e;">
-                  ⏰ <strong>Received:</strong> ${new Date().toLocaleString('en-US', {
-          dateStyle: 'full',
-          timeStyle: 'short'
-        })}
+                  ⏰ <strong>Received:</strong> ${new Date().toLocaleString(
+                    "en-US",
+                    {
+                      dateStyle: "full",
+                      timeStyle: "short",
+                    }
+                  )}
                 </p>
               </div>
             </div>
             
             <div style="text-align: center; margin-top: 20px; padding: 15px; color: #94a3b8; font-size: 0.85em;">
               <p style="margin: 5px 0;">This email was sent automatically from your EcoGlow website.</p>
-              ${name || message ? `<p style="margin: 5px 0;">Please respond to: <a href="mailto:${userEmail}" style="color: #0f766e;">${userEmail}</a></p>` : ''}
+              ${
+                name || message
+                  ? `<p style="margin: 5px 0;">Please respond to: <a href="mailto:${userEmail}" style="color: #0f766e;">${userEmail}</a></p>`
+                  : ""
+              }
             </div>
           </div>
         `,
-        replyTo: userEmail
+        replyTo: userEmail,
       };
     } else {
       // Simple newsletter subscription email
       mailOptions = {
         from: process.env.EMAIL_USER,
         to: adminEmail,
-        subject: '🌱 New Newsletter Subscription | EcoGlow',
+        subject: "🌱 New Newsletter Subscription | EcoGlow",
         html: `
           <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
             <h2 style="color: #0f766e;">New Subscriber Alert!</h2>
@@ -145,34 +182,47 @@ export const sendNewsletterNotification = async (req, res) => {
               This email was sent automatically from your EcoGlow website.
             </p>
           </div>
-        `
+        `,
       };
     }
 
     // 3. SEND EMAIL (NON-BLOCKING BACKGROUND SEND)
-    transporter.sendMail(mailOptions)
+    transporter
+      .sendMail(mailOptions)
       .then(() => console.log(`✅ Email sent successfully for: ${userEmail}`))
-      .catch(emailError => console.error("❌ Background Email Delivery Failed:", emailError.message));
+      .catch((emailError) =>
+        console.error(
+          "❌ Background Email Delivery Failed:",
+          emailError.message
+        )
+      );
 
-    // 4. SAVE TO DATABASE (Still do this, it's quick)
-    Newsletter.create({
+    await Newsletter.findOneAndUpdate(
+  { email: userEmail },
+  {
+    $setOnInsert: {
       email: userEmail,
-      source: hasContactData ? "contact_form" : "website"
-    }).catch(err => console.log("DB Save Error:", err.message));
+      source: hasContactData ? "contact_form" : "website",
+    },
+  },
+  { upsert: true, new: false }
+);
+
+
+
 
     // 5. RESPOND INSTANTLY
     return res.status(200).json({
       success: true,
       message: hasContactData
         ? "✅ Thank you! Your message has been received."
-        : "✅ Subscribed successfully! Check your email for confirmation."
+        : "✅ Subscribed successfully! Check your email for confirmation.",
     });
-
   } catch (error) {
     console.error("❌ Subscription Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to process subscription. Please try again later."
+      message: "Failed to process subscription. Please try again later.",
     });
   }
 };
@@ -187,28 +237,30 @@ export const sendContactFormNotification = async (req, res) => {
     if (!name || !email || !message) {
       return res.status(400).json({
         success: false,
-        message: "Name, email, and message are required"
+        message: "Name, email, and message are required",
       });
     }
 
     if (!adminEmail) {
       return res.status(400).json({
         success: false,
-        message: "Admin email not configured"
+        message: "Admin email not configured",
       });
     }
 
     // Email Format Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ success: false, message: "Invalid email format" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid email format" });
     }
 
     // Define Email Options
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: adminEmail,
-      subject: `📩 New Contact Form Submission${subject ? `: ${subject}` : ''}`,
+      subject: `📩 New Contact Form Submission${subject ? `: ${subject}` : ""}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
           <div style="background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); padding: 30px; border-radius: 12px 12px 0 0;">
@@ -230,34 +282,45 @@ export const sendContactFormNotification = async (req, res) => {
                 <a href="mailto:${email}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${email}</a>
               </div>
               
-              ${phone ? `
+              ${
+                phone
+                  ? `
               <div style="margin: 15px 0;">
                 <strong style="color: #64748b;">📞 Phone:</strong><br/>
                 <a href="tel:${phone}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${phone}</a>
               </div>
-              ` : ''}
+              `
+                  : ""
+              }
               
-              ${subject ? `
+              ${
+                subject
+                  ? `
               <div style="margin: 15px 0;">
                 <strong style="color: #64748b;">📌 Subject:</strong><br/>
                 <span style="font-size: 1.1em; color: #1e293b;">${subject}</span>
               </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
             
             <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <h3 style="color: #0f766e; margin-top: 0; border-bottom: 2px solid #14b8a6; padding-bottom: 10px;">💬 Message</h3>
               <div style="background: #f0fdfa; padding: 15px; border-radius: 6px; border-left: 4px solid #14b8a6; line-height: 1.6;">
-                ${message.replace(/\n/g, '<br/>')}
+                ${message.replace(/\n/g, "<br/>")}
               </div>
             </div>
             
             <div style="margin-top: 20px; padding: 15px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
               <p style="margin: 0; font-size: 0.9em; color: #92400e;">
-                ⏰ <strong>Received:</strong> ${new Date().toLocaleString('en-US', {
-        dateStyle: 'full',
-        timeStyle: 'short'
-      })}
+                ⏰ <strong>Received:</strong> ${new Date().toLocaleString(
+                  "en-US",
+                  {
+                    dateStyle: "full",
+                    timeStyle: "short",
+                  }
+                )}
               </p>
             </div>
           </div>
@@ -269,26 +332,33 @@ export const sendContactFormNotification = async (req, res) => {
         </div>
       `,
       // Also set reply-to for easy responses
-      replyTo: email
+      replyTo: email,
     };
 
     // Try to Send Email
     // Try to Send Email (NON-BLOCKING)
-    transporter.sendMail(mailOptions)
-      .then(() => console.log(`✅ Contact form notification sent to: ${adminEmail}`))
-      .catch(emailError => console.error("⚠️ Background Contact Email Delivery Failed:", emailError.message));
+    transporter
+      .sendMail(mailOptions)
+      .then(() =>
+        console.log(`✅ Contact form notification sent to: ${adminEmail}`)
+      )
+      .catch((emailError) =>
+        console.error(
+          "⚠️ Background Contact Email Delivery Failed:",
+          emailError.message
+        )
+      );
 
     // RESPOND INSTANTLY
     return res.status(200).json({
       success: true,
-      message: "✅ Thank you for contacting us! We'll get back to you soon."
+      message: "✅ Thank you for contacting us! We'll get back to you soon.",
     });
-
   } catch (error) {
     console.error("❌ Contact Form Error:", error);
     res.status(500).json({
       success: false,
-      message: "Server error. Please try again later."
+      message: "Server error. Please try again later.",
     });
   }
 };
