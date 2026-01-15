@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import Newsletter from '../models/newsletterSchema.js';
+import MessagePage from '../models/messageSchema.js'; // Added MessagePage model
+import ContactPage from '../models/contactSchema.js'; // Added ContactPage model
 
 // --- CONFIGURATION ---
 // Ideally, put these in your .env file
@@ -13,42 +15,33 @@ const transporter = nodemailer.createTransport({
 
 export const sendNewsletterNotification = async (req, res) => {
   try {
-    // 1. Get email data from request - now accepts optional contact form fields
-    const { userEmail, adminEmail, name, phone, subject, message } = req.body;
+    // 1. Get email data from request
+    let { userEmail, adminEmail, name, phone, subject, message } = req.body;
+
+    // 2. Fetch admin email from DB if not provided or to ensure it's from DB
+    if (!adminEmail || adminEmail === 'contact@ecoglow.ae') {
+      const messageSettings = await MessagePage.findOne();
+      const contactSettings = await ContactPage.findOne();
+
+      // Prioritize MessagePage settings, then ContactPage settings, then fallback
+      adminEmail = messageSettings?.contactEmail || contactSettings?.contactEmail || 'fathimathu29@gmail.com';
+      console.log("📍 Backend resolved admin email from DB:", adminEmail);
+    }
 
     if (!userEmail || !adminEmail) {
       return res.status(400).json({ success: false, message: "Missing email details" });
     }
 
+    // 3. Email Format Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+
     // Determine if this is a newsletter subscription or contact form with newsletter
     const hasContactData = name || phone || subject || message;
 
-    // 2. SAVE TO DATABASE FIRST (This ensures we don't lose subscribers)
-    let subscriber;
-    try {
-      subscriber = await Newsletter.create({
-        email: userEmail,
-        source: hasContactData ? "contact_form" : "website"
-      });
-      console.log(`📥 New subscriber saved to database: ${userEmail}`);
-    } catch (dbError) {
-      // Handle duplicate email
-      if (dbError.code === 11000) {
-        console.log(`ℹ️  Email already subscribed: ${userEmail}`);
-
-        // If contact data is provided, still send the contact notification
-        if (!hasContactData) {
-          return res.status(200).json({
-            success: true,
-            message: "You're already subscribed to our newsletter!"
-          });
-        }
-      } else {
-        throw dbError; // Re-throw other errors
-      }
-    }
-
-    // 3. Define Email Options based on data type
+    // 2. Define Email Options based on data type
     let mailOptions;
 
     if (hasContactData) {
@@ -150,44 +143,33 @@ export const sendNewsletterNotification = async (req, res) => {
       };
     }
 
-    // 4. Try to Send Email Notification (with error handling for rate limits)
+    // 3. SEND EMAIL (WAIT FOR RESULT)
     try {
-      // Debug logging - show what's being sent
-      console.log("📧 Attempting to send email:");
-      console.log("  FROM:", mailOptions.from);
-      console.log("  TO:", mailOptions.to);
-      console.log("  SUBJECT:", mailOptions.subject);
-      console.log("  Using EMAIL_USER:", process.env.EMAIL_USER);
-
       await transporter.sendMail(mailOptions);
-      console.log(`✅ Newsletter notification sent for: ${userEmail}`);
-      console.log(`✅ Email sent to admin: ${adminEmail}`);
+      console.log(`✅ Email sent successfully for: ${userEmail}`);
 
+      // 4. SAVE TO DATABASE (Still do this, it's quick)
+      await Newsletter.create({
+        email: userEmail,
+        source: hasContactData ? "contact_form" : "website"
+      }).catch(err => console.log("DB Save Error:", err.message));
+
+      // 5. RESPOND WITH SUCCESS
       return res.status(200).json({
         success: true,
         message: hasContactData
-          ? "✅ Thank you! Your message has been sent and you've been subscribed to our newsletter."
+          ? "✅ Thank you! Your message has been sent successfully."
           : "✅ Subscribed successfully! Check your email for confirmation."
       });
 
     } catch (emailError) {
-      // Handle Gmail rate limit errors gracefully
-      if (emailError.responseCode === 550 || emailError.code === 'EENVELOPE') {
-        console.warn(`⚠️  Gmail daily limit exceeded. Subscription recorded for: ${userEmail}`);
+      console.error("❌ Email Error:", emailError.message);
 
-        return res.status(200).json({
-          success: true,
-          message: hasContactData
-            ? "✅ Message received and subscribed! We'll respond within 24 hours."
-            : "✅ Subscribed successfully! You'll receive our next newsletter."
-        });
-      } else {
-        console.error("⚠️  Email notification failed, but subscription saved:", emailError.message);
-        return res.status(200).json({
-          success: true,
-          message: "✅ Subscribed successfully!"
-        });
-      }
+      // Still return 500 so the user knows it failed
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send email. " + (emailError.code === 'EENVELOPE' ? "Gmail quota exceeded." : emailError.message)
+      });
     }
 
   } catch (error) {
@@ -218,6 +200,12 @@ export const sendContactFormNotification = async (req, res) => {
         success: false,
         message: "Admin email not configured"
       });
+    }
+
+    // Email Format Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
     // Define Email Options
