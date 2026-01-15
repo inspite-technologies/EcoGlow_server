@@ -20,12 +20,18 @@ export const sendNewsletterNotification = async (req, res) => {
 
     // 2. Fetch admin email from DB if not provided or to ensure it's from DB
     if (!adminEmail || adminEmail === 'contact@ecoglow.ae') {
-      const messageSettings = await MessagePage.findOne();
-      const contactSettings = await ContactPage.findOne();
+      try {
+        const [messageSettings, contactSettings] = await Promise.all([
+          MessagePage.findOne().lean(),
+          ContactPage.findOne().lean()
+        ]);
 
-      // Prioritize MessagePage settings, then ContactPage settings, then fallback
-      adminEmail = messageSettings?.contactEmail || contactSettings?.contactEmail || 'fathimathu29@gmail.com';
-      console.log("📍 Backend resolved admin email from DB:", adminEmail);
+        adminEmail = messageSettings?.contactEmail || contactSettings?.contactEmail || 'contact@ecoglow.ae';
+        console.log("📍 Backend resolved admin email from DB:", adminEmail);
+      } catch (dbError) {
+        console.warn("⚠️ DB Fetching settings failed:", dbError.message);
+        adminEmail = 'contact@ecoglow.ae'; // Fallback
+      }
     }
 
     if (!userEmail || !adminEmail) {
@@ -143,34 +149,24 @@ export const sendNewsletterNotification = async (req, res) => {
       };
     }
 
-    // 3. SEND EMAIL (WAIT FOR RESULT)
-    try {
-      await transporter.sendMail(mailOptions);
-      console.log(`✅ Email sent successfully for: ${userEmail}`);
+    // 3. SEND EMAIL (NON-BLOCKING BACKGROUND SEND)
+    transporter.sendMail(mailOptions)
+      .then(() => console.log(`✅ Email sent successfully for: ${userEmail}`))
+      .catch(emailError => console.error("❌ Background Email Delivery Failed:", emailError.message));
 
-      // 4. SAVE TO DATABASE (Still do this, it's quick)
-      await Newsletter.create({
-        email: userEmail,
-        source: hasContactData ? "contact_form" : "website"
-      }).catch(err => console.log("DB Save Error:", err.message));
+    // 4. SAVE TO DATABASE (Still do this, it's quick)
+    Newsletter.create({
+      email: userEmail,
+      source: hasContactData ? "contact_form" : "website"
+    }).catch(err => console.log("DB Save Error:", err.message));
 
-      // 5. RESPOND WITH SUCCESS
-      return res.status(200).json({
-        success: true,
-        message: hasContactData
-          ? "✅ Thank you! Your message has been sent successfully."
-          : "✅ Subscribed successfully! Check your email for confirmation."
-      });
-
-    } catch (emailError) {
-      console.error("❌ Email Error:", emailError.message);
-
-      // Still return 500 so the user knows it failed
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send email. " + (emailError.code === 'EENVELOPE' ? "Gmail quota exceeded." : emailError.message)
-      });
-    }
+    // 5. RESPOND INSTANTLY
+    return res.status(200).json({
+      success: true,
+      message: hasContactData
+        ? "✅ Thank you! Your message has been received."
+        : "✅ Subscribed successfully! Check your email for confirmation."
+    });
 
   } catch (error) {
     console.error("❌ Subscription Error:", error);
@@ -277,32 +273,16 @@ export const sendContactFormNotification = async (req, res) => {
     };
 
     // Try to Send Email
-    try {
-      await transporter.sendMail(mailOptions);
-      console.log(`✅ Contact form notification sent to: ${adminEmail}`);
+    // Try to Send Email (NON-BLOCKING)
+    transporter.sendMail(mailOptions)
+      .then(() => console.log(`✅ Contact form notification sent to: ${adminEmail}`))
+      .catch(emailError => console.error("⚠️ Background Contact Email Delivery Failed:", emailError.message));
 
-      return res.status(200).json({
-        success: true,
-        message: "✅ Thank you for contacting us! We'll get back to you soon."
-      });
-
-    } catch (emailError) {
-      // Handle Gmail rate limits gracefully
-      if (emailError.responseCode === 550 || emailError.code === 'EENVELOPE') {
-        console.warn(`⚠️  Gmail daily limit exceeded. Contact form from: ${email}`);
-
-        return res.status(200).json({
-          success: true,
-          message: "✅ Message received! We'll respond within 24 hours."
-        });
-      } else {
-        console.error("⚠️  Email notification failed:", emailError.message);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to send message. Please try again or contact us directly."
-        });
-      }
-    }
+    // RESPOND INSTANTLY
+    return res.status(200).json({
+      success: true,
+      message: "✅ Thank you for contacting us! We'll get back to you soon."
+    });
 
   } catch (error) {
     console.error("❌ Contact Form Error:", error);

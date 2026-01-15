@@ -24,8 +24,8 @@ import path from "path";
 const app = express();
 
 const corsOptions = {
- origin: [
-    'https://ecoglow.ae','http://localhost:5173' ],
+  origin: [
+    'https://ecoglow.ae', 'http://localhost:5173', 'http://localhost:3000'],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 };
@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
 
 app.use("/about-us", aboutUsRoutes);
 app.use("/services", servicesRoutes);
-app.use("/services/commercial",commercialRoutes)
+app.use("/services/commercial", commercialRoutes)
 app.use("/packages", packagesRoutes);
 app.use("/faq", faqRoutes);
 app.use("/hero", heroRoutes);
@@ -55,10 +55,10 @@ app.use("/advantages", advantagesRoutes);
 app.use("/message", messageRouters);
 app.use("/home-content", homeRoutes);
 app.use("/admin", adminRoutes);
-app.use("/contact",contactRoutes)
-app.use("/bookings",bookingRoutes)
-app.use("/footer",footerRoutes)
-app.use("/header",headerRoutes)
+app.use("/contact", contactRoutes)
+app.use("/bookings", bookingRoutes)
+app.use("/footer", footerRoutes)
+app.use("/header", headerRoutes)
 
 
 app.listen(PORT, () => {
