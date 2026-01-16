@@ -4,11 +4,18 @@ const contactPageSchema = new mongoose.Schema({
   // Hero Banner Section
   heroTitle: { type: String },
   heroSubtitle: { type: String },
-  bannerImage: { type: String }, // Stores the path to the background image
+  bannerImage: { type: String },
 
   // Form & Text Section
   formLabel: { type: String },
   formMainTitle: { type: String },
+
+  // ✅ Enquiry Subjects (NEW)
+  enquirySubjects: [
+    {
+      label: { type: String, required: true }
+    }
+  ],
 
   // Information Details
   contactInfo: {
@@ -17,20 +24,21 @@ const contactPageSchema = new mongoose.Schema({
     email: { type: String }
   },
 
-  // Social Media Links - NEW SECTION
+  // Social Media Links
   socialLinks: {
     facebook: { type: String, default: "#" },
     instagram: { type: String, default: "#" },
     youtube: { type: String, default: "#" },
-    twitter: { type: String, default: "#" }, // Added as an extra option
-    linkedin: { type: String, default: "#" } // Added as an extra option
+    twitter: { type: String, default: "#" },
+    linkedin: { type: String, default: "#" }
   },
 
   // Map
   mapEmbedUrl: { type: String },
 
-  // Contact Email for Form Submissions
+  // Contact Email
   contactEmail: { type: String, default: "" }
+
 }, { timestamps: true });
 
 const ContactPage = mongoose.model("ContactPage", contactPageSchema);

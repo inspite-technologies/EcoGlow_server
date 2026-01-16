@@ -1,36 +1,14 @@
 import mongoose from "mongoose";
 
 const ServiceCardSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    default: ""
-  },
-  subtitle: {
-    type: String,
-    default: ""
-  },
-  image: {
-    type: String,
-    default: null
-  },
-  desc: {
-    type: String,
-    default: ""
-  },
-  // 🔥 Added Contact Fields for each service card
-  phoneNumber: {
-    type: String,
-    default: ""
-  },
-  whatsappNumber: {
-    type: String,
-    default: ""
-  }
+  title: { type: String, default: "" },
+  subtitle: { type: String, default: "" },
+  image: { type: String, default: null },
+  desc: { type: String, default: "" },
+  phoneNumber: { type: String, default: "" },
+  whatsappNumber: { type: String, default: "" }
 });
 
-/**
- * Main Schema for the Full Services Page
- */
 const FullServicesSchema = new mongoose.Schema({
   // Banner & Hero
   bannerImage: { type: String, default: null },
@@ -48,15 +26,19 @@ const FullServicesSchema = new mongoose.Schema({
   gridMainHeading: { type: String, default: "" },
   gridSubheading: { type: String, default: "" },
 
-  // Array of Service Cards (Now includes phone and whatsapp)
+  // Array of Service Cards
   servicesList: [ServiceCardSchema],
+
+  // ✅ New Dynamic Dropdown Arrays
+  cleaningForOptions: [{ type: String }], // e.g. ["Residential", "Commercial"]
+  bedroomOptions: [{ type: String }],    // e.g. ["Studio", "1 Bedroom", "2 Bedrooms"]
 
   // Trust & Newsletter
   trustedText: { type: String, default: "" },
   newsletterTitle: { type: String, default: "" },
   newsletterSubtitle: { type: String, default: "" },
 
-  // Contact Email for Newsletter Notifications
+  // Contact Email
   contactEmail: { type: String, default: "" }
 }, {
   timestamps: true

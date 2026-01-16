@@ -24,6 +24,19 @@ const upsertBooking = async (req, res) => {
       contactEmail: req.body.contactEmail
     };
 
+    // Parse array fields (sent as JSON strings from FormData)
+    if (req.body.cleaningForOptions) {
+      updateData.cleaningForOptions = typeof req.body.cleaningForOptions === 'string'
+        ? JSON.parse(req.body.cleaningForOptions)
+        : req.body.cleaningForOptions;
+    }
+
+    if (req.body.bedroomOptions) {
+      updateData.bedroomOptions = typeof req.body.bedroomOptions === 'string'
+        ? JSON.parse(req.body.bedroomOptions)
+        : req.body.bedroomOptions;
+    }
+
     // If a new file was uploaded by multer
     if (req.file) {
       updateData.heroBannerImage = req.file.path;

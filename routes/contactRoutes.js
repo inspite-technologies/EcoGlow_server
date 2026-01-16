@@ -16,4 +16,5 @@ router.put("/", protectAdmin, multer.single("bannerImage"), updateContactPage);
 router.post("/submit", sendContactFormNotification);
 
 
+
 export default router;

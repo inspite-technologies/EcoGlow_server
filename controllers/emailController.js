@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import Newsletter from "../models/newsletterSchema.js";
 import MessagePage from "../models/messageSchema.js"; // Added MessagePage model
 import ContactPage from "../models/contactSchema.js"; // Added ContactPage model
+import ContactSubmission from "../models/contactSubmissionsSchema.js"; // Added ContactSubmission model
 
 // --- CONFIGURATION ---
 // Ideally, put these in your .env file
@@ -67,9 +68,8 @@ export const sendNewsletterNotification = async (req, res) => {
       mailOptions = {
         from: process.env.EMAIL_USER,
         to: adminEmail,
-        subject: `📩 New Contact & Newsletter Subscription${
-          subject ? `: ${subject}` : ""
-        }`,
+        subject: `📩 New Contact & Newsletter Subscription${subject ? `: ${subject}` : ""
+          }`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <div style="background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); padding: 30px; border-radius: 12px 12px 0 0;">
@@ -81,48 +81,44 @@ export const sendNewsletterNotification = async (req, res) => {
               <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h3 style="color: #0f766e; margin-top: 0; border-bottom: 2px solid #14b8a6; padding-bottom: 10px;">Contact Details</h3>
                 
-                ${
-                  name
-                    ? `
+                ${name
+            ? `
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">👤 Name:</strong><br/>
                   <span style="font-size: 1.1em; color: #1e293b;">${name}</span>
                 </div>
                 `
-                    : ""
-                }
+            : ""
+          }
                 
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">📧 Email:</strong><br/>
                   <a href="mailto:${userEmail}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${userEmail}</a>
                 </div>
                 
-                ${
-                  phone
-                    ? `
+                ${phone
+            ? `
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">📞 Phone:</strong><br/>
                   <a href="tel:${phone}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${phone}</a>
                 </div>
                 `
-                    : ""
-                }
+            : ""
+          }
                 
-                ${
-                  subject
-                    ? `
+                ${subject
+            ? `
                 <div style="margin: 15px 0;">
                   <strong style="color: #64748b;">📌 Subject:</strong><br/>
                   <span style="font-size: 1.1em; color: #1e293b;">${subject}</span>
                 </div>
                 `
-                    : ""
-                }
+            : ""
+          }
               </div>
               
-              ${
-                message
-                  ? `
+              ${message
+            ? `
               <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <h3 style="color: #0f766e; margin-top: 0; border-bottom: 2px solid #14b8a6; padding-bottom: 10px;">💬 Message</h3>
                 <div style="background: #f0fdfa; padding: 15px; border-radius: 6px; border-left: 4px solid #14b8a6; line-height: 1.6;">
@@ -130,8 +126,8 @@ export const sendNewsletterNotification = async (req, res) => {
                 </div>
               </div>
               `
-                  : ""
-              }
+            : ""
+          }
               
               <div style="background: #dcfce7; padding: 15px; border-radius: 8px; border-left: 4px solid #16a34a; margin-bottom: 20px;">
                 <p style="margin: 0; font-size: 0.9em; color: #166534;">
@@ -142,23 +138,22 @@ export const sendNewsletterNotification = async (req, res) => {
               <div style="padding: 15px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
                 <p style="margin: 0; font-size: 0.9em; color: #92400e;">
                   ⏰ <strong>Received:</strong> ${new Date().toLocaleString(
-                    "en-US",
-                    {
-                      dateStyle: "full",
-                      timeStyle: "short",
-                    }
-                  )}
+            "en-US",
+            {
+              dateStyle: "full",
+              timeStyle: "short",
+            }
+          )}
                 </p>
               </div>
             </div>
             
             <div style="text-align: center; margin-top: 20px; padding: 15px; color: #94a3b8; font-size: 0.85em;">
               <p style="margin: 5px 0;">This email was sent automatically from your EcoGlow website.</p>
-              ${
-                name || message
-                  ? `<p style="margin: 5px 0;">Please respond to: <a href="mailto:${userEmail}" style="color: #0f766e;">${userEmail}</a></p>`
-                  : ""
-              }
+              ${name || message
+            ? `<p style="margin: 5px 0;">Please respond to: <a href="mailto:${userEmail}" style="color: #0f766e;">${userEmail}</a></p>`
+            : ""
+          }
             </div>
           </div>
         `,
@@ -198,15 +193,15 @@ export const sendNewsletterNotification = async (req, res) => {
       );
 
     await Newsletter.findOneAndUpdate(
-  { email: userEmail },
-  {
-    $setOnInsert: {
-      email: userEmail,
-      source: hasContactData ? "contact_form" : "website",
-    },
-  },
-  { upsert: true, new: false }
-);
+      { email: userEmail },
+      {
+        $setOnInsert: {
+          email: userEmail,
+          source: hasContactData ? "contact_form" : "website",
+        },
+      },
+      { upsert: true, new: false }
+    );
 
 
 
@@ -256,6 +251,25 @@ export const sendContactFormNotification = async (req, res) => {
         .json({ success: false, message: "Invalid email format" });
     }
 
+    // Save submission to database
+    try {
+      const newSubmission = new ContactSubmission({
+        name,
+        email,
+        phone: phone || null,
+        subject: subject || null,
+        message,
+        source: "contact_form",
+        status: "new"
+      });
+
+      await newSubmission.save();
+      console.log(`✅ Contact submission saved to database for: ${email}`);
+    } catch (dbError) {
+      console.error("⚠️ Failed to save submission to database:", dbError.message);
+      // Continue with email sending even if DB save fails
+    }
+
     // Define Email Options
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -282,27 +296,25 @@ export const sendContactFormNotification = async (req, res) => {
                 <a href="mailto:${email}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${email}</a>
               </div>
               
-              ${
-                phone
-                  ? `
+              ${phone
+          ? `
               <div style="margin: 15px 0;">
                 <strong style="color: #64748b;">📞 Phone:</strong><br/>
                 <a href="tel:${phone}" style="font-size: 1.1em; color: #0f766e; text-decoration: none;">${phone}</a>
               </div>
               `
-                  : ""
-              }
+          : ""
+        }
               
-              ${
-                subject
-                  ? `
+              ${subject
+          ? `
               <div style="margin: 15px 0;">
                 <strong style="color: #64748b;">📌 Subject:</strong><br/>
                 <span style="font-size: 1.1em; color: #1e293b;">${subject}</span>
               </div>
               `
-                  : ""
-              }
+          : ""
+        }
             </div>
             
             <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -315,12 +327,12 @@ export const sendContactFormNotification = async (req, res) => {
             <div style="margin-top: 20px; padding: 15px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
               <p style="margin: 0; font-size: 0.9em; color: #92400e;">
                 ⏰ <strong>Received:</strong> ${new Date().toLocaleString(
-                  "en-US",
-                  {
-                    dateStyle: "full",
-                    timeStyle: "short",
-                  }
-                )}
+          "en-US",
+          {
+            dateStyle: "full",
+            timeStyle: "short",
+          }
+        )}
               </p>
             </div>
           </div>
