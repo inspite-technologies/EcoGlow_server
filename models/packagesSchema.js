@@ -13,6 +13,8 @@ const PricingTableSchema = new mongoose.Schema({
   id: { type: String, required: true }, 
   sectionLabel: { type: String, default: "" },
   title: { type: String, default: "" },
+  whatsappLink: { type: String, default: "" },
+  externalLink: { type: String, default: "" },
   columns: [{ type: String }],
   rows: [TableRowSchema]
 });
@@ -22,7 +24,9 @@ const PackageCardSchema = new mongoose.Schema({
   title: { type: String, default: "" },
   features: { type: String, default: "" }, 
   price: { type: String, default: "" },
-  min: { type: String, default: "" }
+  min: { type: String, default: "" },
+  whatsappLink: { type: String, default: "" },
+  externalLink: { type: String, default: "" },
 });
 
 // --- Main Schema ---
