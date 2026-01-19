@@ -25,8 +25,7 @@ const PackageCardSchema = new mongoose.Schema({
   features: { type: String, default: "" }, 
   price: { type: String, default: "" },
   min: { type: String, default: "" },
-  whatsappLink: { type: String, default: "" },
-  externalLink: { type: String, default: "" },
+  
 });
 
 // --- Main Schema ---
@@ -45,14 +44,18 @@ const PackagesSchema = new mongoose.Schema({
   residential: {
     heading: { type: String, default: "Residential" },
     card1: { type: PackageCardSchema, default: {} },
-    card2: { type: PackageCardSchema, default: {} }
+    card2: { type: PackageCardSchema, default: {} },
+    whatsappLink: { type: String, default: "" },
+  externalLink: { type: String, default: "" },
   },
 
   // 4. Commercial Section
   commercial: {
     heading: { type: String, default: "Commercial" },
     card1: { type: PackageCardSchema, default: {} },
-    card2: { type: PackageCardSchema, default: {} }
+    card2: { type: PackageCardSchema, default: {} },
+    whatsappLink: { type: String, default: "" },
+  externalLink: { type: String, default: "" },
   },
 
   // 5. Dynamic Tables
