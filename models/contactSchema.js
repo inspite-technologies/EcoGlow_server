@@ -26,11 +26,11 @@ const contactPageSchema = new mongoose.Schema({
 
   // Social Media Links
   socialLinks: {
-    facebook: { type: String, default: "#" },
-    instagram: { type: String, default: "#" },
-    youtube: { type: String, default: "#" },
-    twitter: { type: String, default: "#" },
-    linkedin: { type: String, default: "#" }
+    facebook: { type: String, default: "" },
+    instagram: { type: String, default: "" },
+    youtube: { type: String, default: "" },
+    twitter: { type: String, default: "" },
+    linkedin: { type: String, default: "" }
   },
 
   // Map
