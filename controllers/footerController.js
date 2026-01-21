@@ -22,11 +22,12 @@ const upsertFooter = async (req, res) => {
       phone: req.body.phone,
       whatsapp: req.body.whatsapp,
       email: req.body.email,
-      usefulLinks: req.body.usefulLinks, 
+      usefulLinks: req.body.usefulLinks,
       socialLinks: {
         facebook: req.body.facebook,
         instagram: req.body.instagram,
         youtube: req.body.youtube,
+        linkedin: req.body.linkedin,
       },
       copyrightText: req.body.copyrightText,
     };

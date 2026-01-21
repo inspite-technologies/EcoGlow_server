@@ -21,6 +21,7 @@ const FooterSchema = new mongoose.Schema(
       facebook: { type: String, default: "https://facebook.com/ecoglow" },
       instagram: { type: String, default: "https://instagram.com/ecoglow" },
       youtube: { type: String, default: "https://youtube.com/@ecoglow" },
+      linkedin: { type: String, default: "" },
     },
 
     // Legal
