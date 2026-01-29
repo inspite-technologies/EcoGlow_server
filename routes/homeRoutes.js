@@ -14,6 +14,7 @@ import CommercialServices from "../models/commercialSchema.js";
 const router = express.Router();
 
 router.get("/", async (req, res) => {
+  console.log("GET /home-content request received");
   try {
     // Use Promise.all to fetch everything in parallel (fastest way)
     const [hero, about, services, banner, advantages, message, header, footer, resServices, commServices] = await Promise.all([

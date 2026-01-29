@@ -19,16 +19,22 @@ const storage = new CloudinaryStorage({
       file.fieldname === 'beforeImage' ||
       file.fieldname === 'afterImage';
 
+    // Sanitize filename: remove extension, trim whitespace, replace spaces/special chars
+    const sanitizedFilename = file.originalname
+      .split('.')[0]                    // Remove extension
+      .trim()                            // Remove leading/trailing whitespace
+      .replace(/\s+/g, '-')              // Replace spaces with hyphens
+      .replace(/[^a-zA-Z0-9-_]/g, '');   // Remove special characters
+
     return {
       folder: 'eco-glow-uploads',
-      // 🔥 CRITICAL: Use 'raw' for banner images = NO processing whatsoever
-      resource_type: isBannerImage ? 'raw' : 'image',
-      public_id: `${Date.now()}-${file.originalname.split('.')[0]}`,
+      resource_type: 'image',
+      public_id: `${Date.now()}-${sanitizedFilename}`,
 
-      // Banner images: EMPTY transformation (raw type ignores this anyway)
+      // Banner images: Preserve quality (100)
       // Other images: Standard optimization
       transformation: isBannerImage
-        ? []
+        ? [{ quality: 100 }]
         : [
           { width: 1200, crop: 'limit' },
           { quality: 'auto:best' },
@@ -38,6 +44,20 @@ const storage = new CloudinaryStorage({
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+    files: 10 // Max 10 files per request
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (!file.mimetype.startsWith('image/')) {
+      cb(new Error('Only image files are allowed!'), false);
+      return;
+    }
+    cb(null, true);
+  }
+});
 
 export default upload;

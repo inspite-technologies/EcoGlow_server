@@ -30,8 +30,8 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 //  Serve uploaded images
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -60,6 +60,51 @@ app.use("/bookings", bookingRoutes)
 app.use("/footer", footerRoutes)
 app.use("/header", headerRoutes)
 
+// Global Error Handler - Place AFTER all routes
+app.use((err, req, res, next) => {
+  console.error("❌ Global Error Handler Caught:", err);
+
+  // Handle Multer Errors
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        success: false,
+        message: 'File too large. Maximum size is 50MB.',
+        error: err.message
+      });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Too many files uploaded.',
+        error: err.message
+      });
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({
+        success: false,
+        message: 'Unexpected file field.',
+        error: err.message
+      });
+    }
+  }
+
+  // Handle custom file filter errors
+  if (err.message === 'Only image files are allowed!') {
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+      error: 'Invalid file type'
+    });
+  }
+
+  // Default error response
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
