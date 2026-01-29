@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import "dotenv/config";
 import connectDB from "./config/connection.js";
 import aboutUsRoutes from "./routes/aboutUsRoutes.js";
@@ -25,7 +25,7 @@ const app = express();
 
 const corsOptions = {
   origin: [
-    'https://ecoglow.ae', 'http://localhost:5173', 'http://localhost:3000'],
+    'https://ecoglow.ae', 'http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173'],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 };

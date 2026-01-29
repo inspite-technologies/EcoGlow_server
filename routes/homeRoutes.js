@@ -1,37 +1,33 @@
 import express from "express";
-// Import your existing models (adjust paths as needed)
+// Import your existing models
 import Hero from "../models/heroSchema.js";
 import HomeAbout from "../models/homeAboutSchema.js";
 import HomeServices from "../models/servicesHomeSchema.js";
 import Banner from "../models/bannerSchema.js";
 import Advantages from "../models/advantagesSchema.js";
 import Message from "../models/messageSchema.js";
+import Header from "../models/headerSchema.js";
+import Footer from "../models/footerSchema.js";
+import FullServices from "../models/servicesSchema.js";
+import CommercialServices from "../models/commercialSchema.js";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
     // Use Promise.all to fetch everything in parallel (fastest way)
-    const [hero, about, services, banner, advantages, message] = await Promise.all([
-      Hero.findOne(),         // Assuming single document structure
+    const [hero, about, services, banner, advantages, message, header, footer, resServices, commServices] = await Promise.all([
+      Hero.findOne(),
       HomeAbout.findOne(),
-      HomeServices.find(),    // or findOne depending on your structure
+      HomeServices.find(),
       Banner.findOne(),
       Advantages.find(),
-      Message.findOne()
+      Message.findOne(),
+      Header.findOne(),
+      Footer.findOne(),
+      FullServices.findOne(),
+      CommercialServices.findOne()
     ]);
-
-    // Debug logging
-    console.log("📊 Home Content Fetch:");
-    console.log("  - Hero:", hero ? "✅ Found" : "❌ Not found");
-    console.log("  - About:", about ? "✅ Found" : "❌ Not found");
-    console.log("  - Services:", services ? `✅ Found ${services.length} items` : "❌ Not found");
-    console.log("  - Banner:", banner ? "✅ Found" : "❌ Not found");
-    console.log("  - Advantages:", advantages ? `✅ Found ${advantages.length} items` : "❌ Not found");
-    console.log("  - Message:", message ? "✅ Found" : "❌ Not found");
-    if (message) {
-      console.log("  - Message Data:", JSON.stringify(message, null, 2));
-    }
 
     // Return one unified object
     res.status(200).json({
@@ -42,7 +38,11 @@ router.get("/", async (req, res) => {
         services,
         banner,
         advantages,
-        message
+        message,
+        header,
+        footer,
+        resServices: resServices?.servicesList || [],
+        commServices: commServices?.servicesList || []
       }
     });
   } catch (error) {

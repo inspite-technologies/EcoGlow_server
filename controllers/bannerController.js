@@ -73,7 +73,7 @@ const getBanner = async (req, res) => {
   } catch (error) {
     console.error("Get Banner Error:", error);
     res.status(500).json({ success: false, message: "Failed to get Banner", error: error.message });
-  } 
+  }
 };
 
 export { createBanner, updateBanner, getBanner };
