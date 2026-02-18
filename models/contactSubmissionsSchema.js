@@ -6,6 +6,7 @@ const contactSubmissionSchema = new mongoose.Schema({
     phone: { type: String },
     subject: { type: String },  // Enquiry field
     message: { type: String, required: true },
+    materialPreference: { type: String }, // New field for Standard Shine Options
     source: { type: String, default: "contact_form" },
     status: { type: String, enum: ['new', 'read', 'responded'], default: 'new' }
 }, { timestamps: true });

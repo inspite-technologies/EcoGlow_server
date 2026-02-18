@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
 export const sendNewsletterNotification = async (req, res) => {
   try {
     // 1. Get email data from request
-    let { userEmail, adminEmail, name, phone, subject, message } = req.body;
+    let { userEmail, adminEmail, name, phone, subject, message, materialPreference } = req.body;
 
     // 2. Fetch admin email from DB if not provided or to ensure it's from DB
     if (!adminEmail || adminEmail === "contact@ecoglow.ae") {
@@ -68,13 +68,11 @@ export const sendNewsletterNotification = async (req, res) => {
       mailOptions = {
         from: process.env.EMAIL_USER,
         to: adminEmail,
-        subject: `📩 New Contact & Newsletter Subscription${subject ? `: ${subject}` : ""
-          }`,
+        subject: `📩 New Enquiry${subject ? `: ${subject}` : ""}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <div style="background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); padding: 30px; border-radius: 12px 12px 0 0;">
-              <h2 style="color: white; margin: 0; font-size: 24px;">📩 New Contact & Newsletter Subscription</h2>
-              <p style="color: #e0f2fe; margin: 5px 0 0 0;">Someone contacted you and subscribed to your newsletter!</p>
+              <h2 style="color: white; margin: 0; font-size: 24px;">📩 New Enquiry</h2>
             </div>
             
             <div style="background: #f8fafc; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0;">
@@ -106,6 +104,16 @@ export const sendNewsletterNotification = async (req, res) => {
             : ""
           }
                 
+                ${materialPreference
+            ? `
+                <div style="margin: 15px 0;">
+                  <strong style="color: #64748b;">🧽 Material Preference:</strong><br/>
+                  <span style="font-size: 1.1em; color: #1e293b;">${materialPreference}</span>
+                </div>
+                `
+            : ""
+          }
+
                 ${subject
             ? `
                 <div style="margin: 15px 0;">
@@ -127,14 +135,7 @@ export const sendNewsletterNotification = async (req, res) => {
               </div>
               `
             : ""
-          }
-              
-              <div style="background: #dcfce7; padding: 15px; border-radius: 8px; border-left: 4px solid #16a34a; margin-bottom: 20px;">
-                <p style="margin: 0; font-size: 0.9em; color: #166534;">
-                  ✅ <strong>Subscribed to Newsletter:</strong> This contact has been added to your newsletter list.
-                </p>
-              </div>
-              
+          }      
               <div style="padding: 15px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
                 <p style="margin: 0; font-size: 0.9em; color: #92400e;">
                   ⏰ <strong>Received:</strong> ${new Date().toLocaleString(
@@ -160,17 +161,17 @@ export const sendNewsletterNotification = async (req, res) => {
         replyTo: userEmail,
       };
     } else {
-      // Simple newsletter subscription email
+      // Simple enquiry email
       mailOptions = {
         from: process.env.EMAIL_USER,
         to: adminEmail,
-        subject: "🌱 New Newsletter Subscription | EcoGlow",
+        subject: "📩 New Enquiry",
         html: `
           <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-            <h2 style="color: #0f766e;">New Subscriber Alert!</h2>
-            <p>You have a new newsletter subscription from the website.</p>
+            <h2 style="color: #0f766e;">📩 New Enquiry</h2>
+            <p>You have a new enquiry from the website.</p>
             <div style="background: #f0fdfa; padding: 15px; border-radius: 8px; border: 1px solid #ccfbf1;">
-              <strong>Subscriber Email:</strong> <br/>
+              <strong>Customer Email:</strong> <br/>
               <span style="font-size: 1.2em; color: #0f766e;">${userEmail}</span>
             </div>
             <p style="margin-top: 20px; font-size: 0.9em; color: #666;">
@@ -192,32 +193,60 @@ export const sendNewsletterNotification = async (req, res) => {
         )
       );
 
-    await Newsletter.findOneAndUpdate(
-      { email: userEmail },
-      {
-        $setOnInsert: {
-          email: userEmail,
-          source: hasContactData ? "contact_form" : "website",
+    if (hasContactData) {
+      await Newsletter.findOneAndUpdate(
+        { email: userEmail },
+        {
+          $setOnInsert: {
+            email: userEmail,
+            source: "newEnquiry",
+          },
         },
-      },
-      { upsert: true, new: false }
-    );
+        { upsert: true, new: false }
+      );
 
-
-
+      // Save as Contact Submission as well for backup/admin dashboard
+      try {
+        const newSubmission = new ContactSubmission({
+          name: name || "Booking Request",
+          email: userEmail,
+          phone: phone || null,
+          subject: subject || "New Enquiry",
+          message: message || "No message provided",
+          materialPreference: materialPreference || null,
+          source: "newEnquiry",
+          status: "new"
+        });
+        await newSubmission.save();
+        console.log(`✅ Booking submission saved to DB for: ${userEmail}`);
+      } catch (dbErr) {
+        console.error("⚠️ Failed to save booking submission:", dbErr.message);
+      }
+    } else {
+      await Newsletter.findOneAndUpdate(
+        { email: userEmail },
+        {
+          $setOnInsert: {
+            email: userEmail,
+            source: "newEnquiry",
+          },
+        },
+        { upsert: true, new: false }
+      );
+    }
 
     // 5. RESPOND INSTANTLY
     return res.status(200).json({
       success: true,
       message: hasContactData
         ? "✅ Thank you! Your message has been received."
-        : "✅ Subscribed successfully! Check your email for confirmation.",
+        : "✅ Thank you! Your enquiry has been received.",
     });
   } catch (error) {
-    console.error("❌ Subscription Error:", error);
+    console.error("❌ Enquiry Process Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to process subscription. Please try again later.",
+      message: "Failed to process enquiry. Please try again later.",
     });
   }
 };
@@ -259,7 +288,7 @@ export const sendContactFormNotification = async (req, res) => {
         phone: phone || null,
         subject: subject || null,
         message,
-        source: "contact_form",
+        source: "newEnquiry",
         status: "new"
       });
 
@@ -274,11 +303,11 @@ export const sendContactFormNotification = async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: adminEmail,
-      subject: `📩 New Contact Form Submission${subject ? `: ${subject}` : ""}`,
+      subject: `📩 New Enquiry${subject ? `: ${subject}` : ""}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
           <div style="background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%); padding: 30px; border-radius: 12px 12px 0 0;">
-            <h2 style="color: white; margin: 0; font-size: 24px;">📩 New Contact Form Submission</h2>
+            <h2 style="color: white; margin: 0; font-size: 24px;">📩 New Enquiry</h2>
             <p style="color: #e0f2fe; margin: 5px 0 0 0;">Someone contacted you through your website!</p>
           </div>
           
@@ -338,7 +367,7 @@ export const sendContactFormNotification = async (req, res) => {
           </div>
           
           <div style="text-align: center; margin-top: 20px; padding: 15px; color: #94a3b8; font-size: 0.85em;">
-            <p style="margin: 5px 0;">This email was sent automatically from your EcoGlow website contact form.</p>
+            <p style="margin: 5px 0;">This email was sent automatically from your EcoGlow website.</p>
             <p style="margin: 5px 0;">Please respond to the customer at: <a href="mailto:${email}" style="color: #0f766e;">${email}</a></p>
           </div>
         </div>
@@ -347,7 +376,6 @@ export const sendContactFormNotification = async (req, res) => {
       replyTo: email,
     };
 
-    // Try to Send Email
     // Try to Send Email (NON-BLOCKING)
     transporter
       .sendMail(mailOptions)
